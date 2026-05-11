@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Quiz Emmanuel 60 ans</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:white;min-height:100vh;}
+.screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;}
+.screen.active{display:flex;}
+.logo{font-size:3.5rem;margin-bottom:10px;}
+.title{font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:5px;}
+.subtitle{font-size:.95rem;opacity:.7;margin-bottom:25px;}
+.input-group{width:100%;max-width:340px;margin-bottom:15px;}
+.input-group label{display:block;font-size:.85rem;opacity:.7;margin-bottom:6px;text-align:left;}
+.input-group input{width:100%;padding:14px 18px;border-radius:14px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:white;font-size:1.1rem;outline:none;}
+.input-group input:focus{border-color:#ffd200;}
+.input-group input::placeholder{color:rgba(255,255,255,.4);}
+.btn-join{background:linear-gradient(135deg,#f7971e,#ffd200);color:#0f0c29;border:none;border-radius:50px;padding:16px 45px;font-size:1.2rem;font-weight:900;cursor:pointer;width:100%;max-width:340px;box-shadow:0 5px 25px rgba(255,210,0,.35);}
+.btn-join:disabled{opacity:.5;}
+.waiting-emoji{font-size:4rem;animation:pulse 1.5s infinite;margin-bottom:15px;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+.waiting-name{font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;}
+.player-count-badge{background:rgba(255,210,0,.15);border:2px solid #ffd200;border-radius:30px;padding:8px 20px;margin-top:20px;font-size:.9rem;font-weight:600;}
+#screen-question{justify-content:flex-start;padding-top:15px;}
+.q-header{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.q-num-badge{background:rgba(255,255,255,.1);border-radius:8px;padding:5px 12px;font-size:.8rem;font-weight:700;}
+.timer-badge{background:rgba(255,210,0,.15);border:2px solid #ffd200;border-radius:30px;padding:5px 16px;font-size:1rem;font-weight:900;color:#ffd200;min-width:50px;text-align:center;}
+.timer-badge.urgent{background:rgba(231,76,60,.3);border-color:#e74c3c;color:#e74c3c;}
+.pts-badge{background:rgba(255,100,100,.15);border:2px solid #ff6b6b;border-radius:8px;padding:5px 12px;font-size:.8rem;font-weight:700;color:#ff6b6b;}
+.q-text{font-size:1rem;font-weight:700;line-height:1.5;background:rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:16px;width:100%;border-left:4px solid #ffd200;text-align:left;}
+.answers-container{width:100%;display:flex;flex-direction:column;gap:10px;}
+.answer-choice{width:100%;padding:16px 18px;border-radius:14px;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:white;font-size:1rem;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all .2s;}
+.answer-choice.selected{border-color:#ffd200;background:rgba(255,210,0,.15);transform:scale(1.02);}
+.letter-pill{background:rgba(0,0,0,.3);border-radius:8px;padding:3px 9px;font-weight:900;font-size:.95rem;flex-shrink:0;min-width:30px;text-align:center;}
+.a-color .letter-pill{background:#e74c3c;}
+.b-color .letter-pill{background:#3498db;}
+.c-color .letter-pill{background:#2ecc71;}
+.d-color .letter-pill{background:#f39c12;}
+.sent-panel{display:none;flex-direction:column;align-items:center;gap:10px;margin-top:10px;background:rgba(46,204,113,.1);border:2px solid #2ecc71;border-radius:14px;padding:16px;width:100%;}
+.sent-panel.show{display:flex;}
+#screen-reveal{justify-content:flex-start;padding-top:20px;}
+.reveal-result{width:100%;border-radius:20px;padding:25px 20px;margin-bottom:20px;text-align:center;}
+.reveal-result.won{background:rgba(46,204,113,.15);border:3px solid #2ecc71;}
+.reveal-result.lost{background:rgba(231,76,60,.1);border:2px solid rgba(231,76,60,.4);}
+.reveal-icon{font-size:3.5rem;margin-bottom:10px;}
+.reveal-title{font-size:1.2rem;font-weight:900;margin-bottom:5px;}
+.total-score-badge{background:rgba(255,210,0,.15);border:2px solid #ffd200;border-radius:20px;padding:12px 25px;font-size:1rem;font-weight:700;}
+#screen-leaderboard-player{justify-content:flex-start;padding-top:20px;}
+.lb-title{font-size:1.5rem;font-weight:900;color:#ffd200;margin-bottom:15px;}
+.lb-list{width:100%;max-width:400px;}
+.lb-item{display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:12px;margin-bottom:8px;background:rgba(255,255,255,.07);animation:slideUp .3s ease both;}
+@keyframes slideUp{from{transform:translateY(15px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.lb-item.me{background:rgba(255,210,0,.15);border:2px solid #ffd200;}
+.lb-pos{width:32px;text-align:center;font-weight:900;font-size:1.1rem;}
+.lb-player-name{flex:1;font-weight:600;font-size:.95rem;}
+.lb-player-score{font-weight:900;color:#ffd200;}
+.error-msg{color:#e74c3c;font-size:.9rem;margin-top:8px;min-height:20px;}
+</style>
+</head>
+<body>
+<div class="screen active" id="screen-join">
+  <div class="logo">&#127874;</div>
+  <div class="title">Quiz Emmanuel 60 ans</div>
+  <div class="subtitle">BD &amp; Anecdotes de famille</div>
+  <div class="input-group">
+    <label>Ton pr&eacute;nom</label>
+    <input type="text" id="player-name" placeholder="Ex: Sophie" maxlength="20" autocomplete="off" />
+  </div>
+  <div class="error-msg" id="join-error"></div>
+  <button class="btn-join" onclick="joinGame()" id="btn-join">Rejoindre le Quiz &#128640;</button>
+</div>
+
+<div class="screen" id="screen-waiting">
+  <div class="waiting-emoji">&#9203;</div>
+  <div class="waiting-name" id="wait-name"></div>
+  <div style="opacity:.7;font-size:.95rem;">Tu es dans la partie !<br>Le quiz va bientot commencer...</div>
+  <div class="player-count-badge" id="wait-count">1 joueur</div>
+</div>
+
+<div class="screen" id="screen-question">
+  <div class="q-header">
+    <span class="q-num-badge" id="pq-number">Q1</span>
+    <span class="timer-badge" id="player-timer">20</span>
+    <span class="pts-badge" id="pq-points">1 pt</span>
+  </div>
+  <div class="q-text" id="pq-text"></div>
+  <div class="answers-container" id="player-answers"></div>
+  <div class="sent-panel" id="sent-panel">
+    <div class="sent-icon">&#10003;</div>
+    <div style="font-weight:700;color:#2ecc71;">R&eacute;ponse envoy&eacute;e !</div>
+    <div style="font-size:.85rem;opacity:.6;">En attente de la r&eacute;v&eacute;lation...</div>
+  </div>
+</div>
+
+<div class="screen" id="screen-reveal">
+  <div class="reveal-result" id="reveal-result">
+    <div class="reveal-icon" id="reveal-icon">&#127919;</div>
+    <div class="reveal-title" id="reveal-title">Bonne r&eacute;ponse !</div>
+    <div style="font-size:.95rem;opacity:.7;" id="reveal-pts">+1 point</div>
+  </div>
+  <div class="total-score-badge" id="reveal-total">Score : 0 pt</div>
+</div>
+
+<div class="screen" id="screen-leaderboard-player">
+  <div class="lb-title">&#127942; Classement</div>
+  <div class="lb-list" id="player-lb-list"></div>
+  <div style="margin-top:15px;font-size:.85rem;opacity:.5;">La suite arrive...</div>
+</div>
+
+<div class="screen" id="screen-finale-player">
+  <div style="font-size:4rem;">&#127881;</div>
+  <div style="font-size:1.3rem;font-weight:900;background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:10px 0;" id="finale-winner-text"></div>
+  <div style="font-size:.9rem;opacity:.7;margin-bottom:20px;" id="finale-my-score"></div>
+  <div style="padding:20px;background:rgba(255,210,0,.1);border-radius:15px;border:2px solid #ffd200;font-size:1rem;line-height:1.6;">
+    &#127874; Joyeux anniversaire Emmanuel !<br>
+    <span style="font-size:.85rem;opacity:.7;">Merci d'avoir jou&eacute; &#127946;</span>
+  </div>
+</div>
+
+<script>
+var db=null,gameRef=null,playerId=null,playerName='',myScore=0,hasAnswered=false,myAnswer=-1,currentQIndex=-1,players={},scores={};
+var QUESTIONS=[
+  {id:1,q:"Thorgal souhaite avant tout :",a:["Devenir roi","Vivre une vie tranquille avec sa famille","Conquerir de nouveaux territoires"],c:1,pts:1},
+  {id:2,q:"Quelle particularite rend ce chat unique dans la serie ?",a:["Il est tres savant","Il est aveugle","Il parle apres avoir mange un perroquet"],c:2,pts:1},
+  {id:3,q:"Quel est le nom de ce marin aventurier ?",a:["Corto Malteser","Corto Maltese","Hugo Pratt"],c:1,pts:1},
+  {id:4,q:"Dans la collection des Asterix, il s'agit de l'album :",a:["La Zizanie","Le Combat des chefs","Asterix le Gladiateur"],c:0,pts:1},
+  {id:"b1",q:"La saucisse Carrefour d'Emmanuel pendant tout un repas...",a:["Le boucher l'a arnaque","Sa femme a change les paquets","La saucisse de Mortaux n'a jamais quitte le frigo !"],c:2,pts:2},
+  {id:5,q:"Dans la serie Alix, quel est le titre de l'album suivant ?",a:["Alix et les aventures egyptiennes","Le Dieu sans nom","Persepolis"],c:0,pts:1},
+  {id:6,q:"Quel est le nom du groupe dirige par Largo Winch ?",a:["Le groupe Winch and Co","Le groupe Winczlav","Le groupe W"],c:2,pts:1},
+  {id:7,q:"Qui n'a PAS ecrit les albums de Fluide Glacial ?",a:["Gotlib","Franquin","Tardi"],c:2,pts:1},
+  {id:"b2",q:"Vrai ou faux : grêlons sur la Tesla d'Emmanuel la premiere nuit dehors.",a:["VRAI","FAUX"],c:0,pts:2},
+  {id:8,q:"Le dernier Lucky Luke a ete ecrit par JUL ?",a:["Oui","Non"],c:1,pts:1},
+  {id:9,q:"Qui a ecrit Blake et Mortimer ?",a:["Herge","Edgar P. Jacobs","Rene Goscinny"],c:1,pts:1},
+  {id:10,q:"Quel est le veritable prenom de l'heroine de La Rose Ecarlate ?",a:["Maud","Aline","Alienor"],c:0,pts:1},
+  {id:11,q:"Quelle est la BD la plus lue des Francais ?",a:["Lucky Luke","Asterix","Tintin"],c:1,pts:1},
+  {id:12,q:"Yoko Tsuno est nee dans les annees :",a:["1950","1970","1990"],c:1,pts:1},
+  {id:"b3",q:"Combien de fois le fil des robots d'Emmanuel a-t-il ete coupe ?",a:["2 fois","3 fois","5 fois","7 fois"],c:2,pts:3}
+];
+function getParam(n){return new URLSearchParams(window.location.search).get(n);}
+function joinGame(){
+  var name=document.getElementById('player-name').value.trim();
+  var err=document.getElementById('join-error');
+  if(!name){err.textContent='Entre ton prenom !';return;}
+  var fbUrl=getParam('fb');
+  if(!fbUrl){err.textContent='Lien invalide - contacte l\'organisateur';return;}
+  document.getElementById('btn-join').disabled=true;
+  try{
+    var app=firebase.initializeApp({databaseURL:fbUrl},'player-'+Date.now());
+    db=firebase.database(app);
+    var gid=getParam('game')||('quiz-'+new Date().toDateString().replace(/ /g,'-'));
+    gameRef=db.ref('games/'+gid);
+    playerId='p-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
+    playerName=name;
+    gameRef.child('players/'+playerId).set({name:name,joined:Date.now()});
+    gameRef.child('players/'+playerId).onDisconnect().remove();
+    document.getElementById('wait-name').textContent='Salut '+name+' !';
+    showScreen('waiting');
+    setupListeners();
+  }catch(e){err.textContent='Erreur: '+e.message;document.getElementById('btn-join').disabled=false;}
+}
+function setupListeners(){
+  gameRef.child('players').on('value',function(s){
+    players=s.val()||{};
+    document.getElementById('wait-count').textContent=Object.keys(players).length+' joueur(s)';
+  });
+  gameRef.child('scores').on('value',function(s){
+    scores=s.val()||{};
+    myScore=scores[playerId]||0;
+  });
+  gameRef.on('value',function(s){
+    var d=s.val();if(!d)return;
+    if(d.timerValue!==undefined&&d.phase==='question'){
+      var el=document.getElementById('player-timer');
+      if(el){el.textContent=d.timerValue;if(d.timerValue<=5)el.classList.add('urgent');else el.classList.remove('urgent');}
+    }
+    if(d.phase==='question'&&d.currentQuestion!==currentQIndex){
+      currentQIndex=d.currentQuestion;hasAnswered=false;myAnswer=-1;
+      showPlayerQuestion(currentQIndex,d.timerValue||20);
+    }
+    if(d.phase==='reveal'&&d.answerRevealed)showReveal();
+    if(d.phase==='leaderboard')showPlayerLeaderboard();
+    if(d.phase==='finale')showFinale();
+  });
+}
+function showPlayerQuestion(idx,t){
+  var q=QUESTIONS[idx];if(!q)return;
+  showScreen('question');
+  document.getElementById('pq-number').textContent='Q'+(idx+1)+'/'+QUESTIONS.length;
+  document.getElementById('pq-points').textContent=q.pts+(q.pts>1?' pts':' pt');
+  document.getElementById('pq-text').textContent=q.q;
+  var letters=['A','B','C','D'],cols=['a-color','b-color','c-color','d-color'];
+  var cont=document.getElementById('player-answers');cont.innerHTML='';
+  q.a.forEach(function(ans,i){
+    var btn=document.createElement('button');
+    btn.className='answer-choice '+cols[i];btn.id='pa-'+i;
+    btn.innerHTML='<span class="letter-pill">'+letters[i]+'</span>'+ans;
+    btn.onclick=function(){selectAnswer(i);};
+    cont.appendChild(btn);
+  });
+  document.getElementById('sent-panel').classList.remove('show');
+}
+function selectAnswer(idx){
+  if(hasAnswered)return;
+  hasAnswered=true;myAnswer=idx;
+  document.querySelectorAll('.answer-choice').forEach(function(b,i){
+    if(i===idx)b.classList.add('selected');else{b.style.opacity='.4';b.disabled=true;}
+  });
+  gameRef.child('answers/'+playerId).set({answer:idx,name:playerName,ts:Date.now()});
+  document.getElementById('sent-panel').classList.add('show');
+}
+function showReveal(){
+  var q=QUESTIONS[currentQIndex];if(!q)return;
+  var won=myAnswer===q.c;
+  var res=document.getElementById('reveal-result');
+  res.className='reveal-result '+(won?'won':'lost');
+  document.getElementById('reveal-icon').textContent=won?'[+]':'[x]';
+  document.getElementById('reveal-title').textContent=won?'Bonne reponse !':'Pas tout a fait...';
+  document.getElementById('reveal-pts').textContent=won?'+'+q.pts+' point'+(q.pts>1?'s':'')+'!':'Bonne reponse : '+q.a[q.c];
+  document.getElementById('reveal-total').textContent='Score : '+myScore+' pt'+(myScore>1?'s':'');
+  showScreen('reveal');
+}
+function showPlayerLeaderboard(){
+  var sorted=Object.entries(players).map(function(e){return{pid:e[0],name:e[1].name,score:scores[e[0]]||0};}).sort(function(a,b){return b.score-a.score;});
+  var list=document.getElementById('player-lb-list');list.innerHTML='';
+  var medals=['1er','2e','3e'];
+  sorted.forEach(function(p,i){
+    var isMe=p.pid===playerId;
+    var div=document.createElement('div');
+    div.className='lb-item'+(isMe?' me':'');
+    div.style.animationDelay=(i*.07)+'s';
+    div.innerHTML='<div class="lb-pos">'+(medals[i]||(i+1))+'</div><div class="lb-player-name">'+p.name+(isMe?' (moi)':'')+'</div><div class="lb-player-score">'+p.score+' pt'+(p.score>1?'s':'')+'</div>';
+    list.appendChild(div);
+  });
+  showScreen('leaderboard-player');
+}
+function showFinale(){
+  var sorted=Object.entries(players).map(function(e){return{pid:e[0],name:e[1].name,score:scores[e[0]]||0};}).sort(function(a,b){return b.score-a.score;});
+  var winner=sorted[0];
+  var myRank=sorted.findIndex(function(p){return p.pid===playerId;})+1;
+  document.getElementById('finale-winner-text').textContent=winner.name+' remporte le Quiz !';
+  document.getElementById('finale-my-score').textContent='Tu termines '+myRank+'e avec '+myScore+' pts';
+  showScreen('finale-player');
+}
+function showScreen(n){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var el=document.getElementById('screen-'+n);if(el)el.classList.add('active');
+}
+document.getElementById('player-name').addEventListener('keydown',function(e){if(e.key==='Enter')joinGame();});
+</script>
+</body>
+</html>
