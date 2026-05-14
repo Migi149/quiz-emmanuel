@@ -72,6 +72,8 @@ body {
 /* ===== SCREENS ===== */
 .screen { display:none; position:relative; z-index:10; min-height:100vh; padding:15px; }
 .screen.active { display:block; }
+#screen-lobby.active { display:flex !important; }
+#screen-finale.active { display:flex !important; }
 
 /* ===== LOBBY ===== */
 #screen-lobby {
@@ -341,7 +343,7 @@ body {
 <div class="streak-banner" id="streak-banner"></div>
 
 <!-- LOBBY -->
-<div class="screen active" id="screen-lobby" style="display:flex">
+<div class="screen active" id="screen-lobby">
   <div class="title-big">🎂 Joyeux 60 ans Emmanuel !</div>
   <div class="subtitle">Le Grand Quiz BD &amp; Anecdotes</div>
   <div class="age-badge">✨ 60 ans de passion ✨</div>
@@ -426,7 +428,7 @@ body {
 </div>
 
 <!-- FINALE -->
-<div class="screen" id="screen-finale" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:25px;">
+<div class="screen" id="screen-finale" style="flex-direction:column;align-items:center;justify-content:center;text-align:center;">
   <div class="finale-crown">👑</div>
   <div class="finale-winner" id="finale-winner"></div>
   <div class="finale-sub" id="finale-pts"></div>
@@ -851,9 +853,12 @@ function initBgPanels() {
 
 // UTILS
 function switchScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = '';
+  });
   const el = document.getElementById('screen-' + name);
-  if (el) el.style.display = name === 'lobby' ? 'flex' : 'block';
+  if (el) el.classList.add('active');
 }
 
 // INIT
