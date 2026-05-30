@@ -152,6 +152,8 @@ input[type=text]::placeholder{color:rgba(255,255,255,.4);}
 .toast.show{display:block;animation:toastIn 3.5s ease forwards;}
 
 .hidden{display:none!important;}
+.btn-skip{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:8px 14px;font-size:.85rem;cursor:pointer;transition:all .2s;}
+.btn-skip:hover{background:rgba(255,255,255,.25);color:white;}
 .ctrls{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
 .statusbar{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);padding:5px 15px;display:flex;gap:15px;font-size:.75rem;opacity:.6;z-index:50;}
 </style>
@@ -219,6 +221,7 @@ input[type=text]::placeholder{color:rgba(255,255,255,.4);}
         <button class="btn btn-gold hidden" id="btn-reveal" onclick="reveal()">✅ Révéler la réponse</button>
         <button class="btn btn-gold hidden" id="btn-next" onclick="next()">➡️ Question suivante</button>
         <button class="btn btn-grey hidden" id="btn-lb" onclick="showLb(false)">🏆 Classement</button>
+        <button class="btn btn-skip" id="btn-skip" onclick="skipTimer()" title="Passer le chrono">⏩</button>
       </div>
     </div>
     <div class="qimg-wrap"><img id="qimg" src="" alt=""/></div>
@@ -416,6 +419,7 @@ function showQ() {
   document.getElementById('btn-reveal').classList.add('hidden');
   document.getElementById('btn-next').classList.add('hidden');
   document.getElementById('btn-lb').classList.add('hidden');
+  document.getElementById('btn-skip').classList.remove('hidden');
   document.getElementById('resp-fill').style.width = '0%';
   document.getElementById('resp-txt').textContent = '0 réponse';
   document.getElementById('resp-tot').textContent = '/ ' + Object.keys(players).length;
@@ -510,6 +514,7 @@ function reveal() {
 
   document.getElementById('overlay').classList.add('on');
   document.getElementById('btn-reveal').classList.add('hidden');
+  document.getElementById('btn-skip').classList.add('hidden');
   document.getElementById('btn-next').classList.remove('hidden');
   document.getElementById('btn-lb').classList.remove('hidden');
 }
@@ -648,6 +653,18 @@ function showToast(txt) {
   const t=document.getElementById('toast'); t.textContent=txt;
   t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3600);
+}
+
+function skipTimer() {
+  clearInterval(timer);
+  tval = 0;
+  document.getElementById('tnum').textContent = '0';
+  const arc = document.getElementById('arc');
+  arc.style.strokeDashoffset = 188;
+  arc.style.stroke = '#e74c3c';
+  ref.update({timerValue: 0});
+  document.getElementById('btn-reveal').classList.remove('hidden');
+  document.getElementById('btn-skip').classList.add('hidden');
 }
 
 function goTo(id) {
