@@ -614,8 +614,9 @@ function genQR(fbUrl) {
   const base = window.location.href.replace('master.html','joueur.html');
   const url = base + '?game=' + encodeURIComponent(gameId) + '&fb=' + encodeURIComponent(fbUrl);
   document.getElementById('url-txt').textContent = url;
-  const canvas = document.getElementById('qr-canvas');
-  QRCode.draw(canvas, url);
+  // Replace canvas with img for reliable cross-origin QR
+  const wrap = document.getElementById('qr-canvas').parentNode;
+  wrap.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url) + '" width="200" height="200" style="display:block;border-radius:6px;" alt="QR Code"/>';
 }
 
 // BALLOONS
