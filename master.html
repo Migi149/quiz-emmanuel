@@ -173,7 +173,7 @@ input[type=text]::placeholder{color:rgba(255,255,255,.4);}
   <div id="lobby-main" class="hidden" style="width:100%;max-width:860px;">
     <div class="lgrid">
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div class="qr-wrap"><canvas id="qr-canvas" width="200" height="200"></canvas></div>
+        <div class="qr-wrap"><img id="qr-img" src="" width="200" height="200" style="display:block;border-radius:6px;" alt="QR Code"/></div>
         <div class="url-txt" id="url-txt"></div>
       </div>
       <div class="pbox">
@@ -614,9 +614,8 @@ function genQR(fbUrl) {
   const base = window.location.href.replace('master.html','joueur.html');
   const url = base + '?game=' + encodeURIComponent(gameId) + '&fb=' + encodeURIComponent(fbUrl);
   document.getElementById('url-txt').textContent = url;
-  // Replace canvas with img for reliable cross-origin QR
-  const wrap = document.getElementById('qr-canvas').parentNode;
-  wrap.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url) + '" width="200" height="200" style="display:block;border-radius:6px;" alt="QR Code"/>';
+  const img = document.getElementById('qr-img');
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
 }
 
 // BALLOONS
